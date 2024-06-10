@@ -7,9 +7,11 @@ import tkinter as tk
 from tkinter import messagebox
 import os
 import neat
+import pickle
 
 num_rows    = 20
 num_columns = 20
+vec = pygame.math.Vector2
 
 def ok(x,y):
     return (0<=x<num_rows and 0<=y<num_columns)
@@ -58,57 +60,64 @@ class Snake(object):
         self.body.append(self.head)
 
 
+    # def getDirAction(self, output):
+    #         action = vec(0,0)
+    #         #Calculating which direction is which depending on the current state
+    #         if max(output) == output[0]: #LEFT
+    #             if self.dirnx == 1:
+    #                 action.x = 0
+    #                 action.y = -1
+    #             elif self.dirnx == -1:
+    #                 action.x = 0
+    #                 action.y = 1
+    #             elif self.dirny == -1:
+    #                 action.x = -1
+    #                 action.y = 0
+    #             elif self.dirny == 1:
+    #                 action.x = 1
+    #                 action.y = 0
+    #         elif max(output) == output[1]: #RIGHT
+    #             if self.dirnx == 1:
+    #                 action.x = 0
+    #                 action.y = 1
+    #             elif self.dirnx == -1:
+    #                 action.x = 0
+    #                 action.y = -1
+    #             elif self.dirny == -1:
+    #                 action.x = 1
+    #                 action.y = 0
+    #             elif self.dirny == 1:
+    #                 action.x = -1
+    #                 action.y = 0
+    #         elif max(output) == output[2]: #FORWARD:
+    #             action.x = self.dirnx
+    #             action.y = self.dirny
 
-    def move(self,output):
+    #         return action
+    
+    def move(self,direction):
+        if direction.x == 1 and self.dirnx != -1 and self.dirnx != direction.x:
+            self.dirnx = direction.x
+            self.dirny = direction.y
+
+        elif direction.x == -1 and self.dirnx != 1 and self.dirnx != direction.x:
+            self.dirnx = direction.x
+            self.dirny = direction.y
+
+        elif direction.y == -1 and self.dirny != 1 and self.dirny != direction.y:
+            self.dirnx = direction.x
+            self.dirny = direction.y
+
+        elif direction.y == 1 and self.dirny != -1 and self.dirny != direction.y:
+            self.dirnx = direction.x
+            self.dirny = direction.y
+            
+
         # for event in pygame.event.get():
         #     if event.type == pygame.QUIT:
         #         pygame.quit()
 
-        #     keys = pygame.key.get_pressed()
-
-            #for key in keys:
-            # if keys[pygame.K_LEFT]:
-            #     self.dirnx = -1
-            #     self.dirny = 0
-            #     self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
-
-            # elif keys[pygame.K_RIGHT]:
-            #     self.dirnx = 1
-            #     self.dirny = 0
-            #     self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
-
-            # elif keys[pygame.K_UP]:
-            #     self.dirnx = 0
-            #     self.dirny = -1
-            #     self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
-
-            # elif keys[pygame.K_DOWN]:
-            #     self.dirnx = 0
-            #     self.dirny = 1
-            #     self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
-
-        def getDirAction(self, output):
-            action = [0, 0]
-            max_output = max(output)
-            dir_map = {
-                (1, 0): [[0, -1], [0, 1]],   # Moving right: Left -> Up, Right -> Down
-                (-1, 0): [[0, 1], [0, -1]],  # Moving left: Left -> Down, Right -> Up
-                (0, -1): [[-1, 0], [1, 0]],  # Moving up: Left -> Left, Right -> Right
-                (0, 1): [[1, 0], [-1, 0]]    # Moving down: Left -> Right, Right -> Left
-            }
-
-            if max_output == output[0]:  # LEFT
-                action = dir_map[(self.dirnx, self.dirny)][0]
-                print("Left")
-            elif max_output == output[1]:  # RIGHT
-                action = dir_map[(self.dirnx, self.dirny)][1]
-                print("Right")
-            elif max_output == output[2]:  # FORWARD
-                action = [self.dirnx, self.dirny]
-
-            return action
-        
-        self.turns[self.head.pos[:]] = getDirAction(self,output)
+        self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
 
         for i, c in enumerate(self.body):
             p = c.pos[:]
@@ -118,18 +127,13 @@ class Snake(object):
                 if i == len(self.body)-1:
                     self.turns.pop(p)
             else:
-                #if c.dirnx == -1 and c.pos[0] <= 0: c.pos = (c.rows-1, c.pos[1])
-                #elif c.dirnx == 1 and c.pos[0] >= c.rows-1: c.pos = (0,c.pos[1])
-                #elif c.dirny == 1 and c.pos[1] >= c.rows-1: c.pos = (c.pos[0], 0)
-                #elif c.dirny == -1 and c.pos[1] <= 0: c.pos = (c.pos[0],c.rows-1)
-                #else: c.move(c.dirnx,c.dirny)
                 c.move(c.dirnx,c.dirny)
     
     def check_collision(self):
         head_pos = self.body[0].pos
         #print(str(head_pos[0]),",", str(head_pos[1]),"\n")
         # Check collision with walls
-        if head_pos[0] < 0 or head_pos[0] >= num_rows or head_pos[1] < 0 or head_pos[1] >= num_columns:
+        if head_pos[0] < 0 or head_pos[0] > num_rows-1 or head_pos[1] < 0 or head_pos[1] > num_columns-1:
             # self.alive = False
             return True  # Collision with wall
 
@@ -175,130 +179,398 @@ class Snake(object):
             else:
                 c.draw(surface)
 
-    def distWall(self):
-            global num_rows
-            head_x, head_y = self.head.pos
-            wallDist = [num_rows, num_rows, num_rows]
+    # def distWall(self):
+    #         global num_rows
+    #         head_x, head_y = self.head.pos
+    #         wallDist = [num_rows, num_rows, num_rows]
 
-            if self.dirnx == 1:
-                wallDist[0] = num_rows - head_x
-                wallDist[1] = head_y
-                wallDist[2] = num_rows - head_y
+    #         if self.dirnx == 1:
+    #             wallDist[0] = num_rows - head_x
+    #             wallDist[1] = head_y
+    #             wallDist[2] = num_rows - head_y
 
-            elif self.dirnx == -1:
-                wallDist[0] = head_x
-                wallDist[1] = num_rows - head_y
-                wallDist[2] = head_y
+    #         elif self.dirnx == -1:
+    #             wallDist[0] = head_x
+    #             wallDist[1] = num_rows - head_y
+    #             wallDist[2] = head_y
 
-            elif self.dirny == 1:
-                wallDist[0] = num_rows - head_y
-                wallDist[1] = head_x
-                wallDist[2] = num_rows - head_x
+    #         elif self.dirny == 1:
+    #             wallDist[0] = num_rows - head_y
+    #             wallDist[1] = head_x
+    #             wallDist[2] = num_rows - head_x
 
-            elif self.dirny == -1:
-                wallDist[0] = head_y
-                wallDist[1] = num_rows - head_x
-                wallDist[2] = head_x
+    #         elif self.dirny == -1:
+    #             wallDist[0] = head_y
+    #             wallDist[1] = num_rows - head_x
+    #             wallDist[2] = head_x
 
-            return wallDist
+    #         return wallDist
     
-    def vision(self, snack):
-        global num_rows
-        defaultDist = num_rows / 2
-        dist = [defaultDist, defaultDist, defaultDist]
-        dirSnack = [0, 0, 0]
+    # def vision(self, snack):
+    #     global num_rows
+    #     defaultDist = num_rows / 2
+    #     dist = [defaultDist, defaultDist, defaultDist]
+    #     dirSnack = [0, 0, 0]
 
-        head_x, head_y = self.body[0].pos
-        snack_x, snack_y = snack.pos
+    #     head_x, head_y = self.body[0].pos
+    #     snack_x, snack_y = snack.pos
 
-        for body in self.body[1:]:
-            body_x, body_y = body.pos
+    #     for body in self.body[1:]:
+    #         body_x, body_y = body.pos
 
-            if self.dirnx == 1:  # Right
-                if head_y == body_y:
-                    if head_x < body_x < head_x + defaultDist:
-                        dist[0] = min(dist[0], body_x - head_x)
-                if head_x == body_x:
-                    if head_y > body_y:
-                        dist[1] = min(dist[1], head_y - body_y)
-                    elif head_y < body_y:
-                        dist[2] = min(dist[2], body_y - head_y)
+    #         if self.dirnx == 1:  # Right
+    #             if head_y == body_y:
+    #                 if head_x < body_x < head_x + defaultDist:
+    #                     dist[0] = min(dist[0], body_x - head_x)
+    #             if head_x == body_x:
+    #                 if head_y > body_y:
+    #                     dist[1] = min(dist[1], head_y - body_y)
+    #                 elif head_y < body_y:
+    #                     dist[2] = min(dist[2], body_y - head_y)
 
-            elif self.dirnx == -1:  # Left
-                if head_y == body_y:
-                    if head_x > body_x > head_x - defaultDist:
-                        dist[0] = min(dist[0], head_x - body_x)
-                if head_x == body_x:
-                    if head_y < body_y:
-                        dist[1] = min(dist[1], body_y - head_y)
-                    elif head_y > body_y:
-                        dist[2] = min(dist[2], head_y - body_y)
+    #         elif self.dirnx == -1:  # Left
+    #             if head_y == body_y:
+    #                 if head_x > body_x > head_x - defaultDist:
+    #                     dist[0] = min(dist[0], head_x - body_x)
+    #             if head_x == body_x:
+    #                 if head_y < body_y:
+    #                     dist[1] = min(dist[1], body_y - head_y)
+    #                 elif head_y > body_y:
+    #                     dist[2] = min(dist[2], head_y - body_y)
 
-            elif self.dirny == 1:  # Down
-                if head_x == body_x:
-                    if head_y < body_y < head_y + defaultDist:
-                        dist[0] = min(dist[0], body_y - head_y)
-                if head_y == body_y:
-                    if head_x < body_x:
-                        dist[1] = min(dist[1], body_x - head_x)
-                    elif head_x > body_x:
-                        dist[2] = min(dist[2], head_x - body_x)
+    #         elif self.dirny == 1:  # Down
+    #             if head_x == body_x:
+    #                 if head_y < body_y < head_y + defaultDist:
+    #                     dist[0] = min(dist[0], body_y - head_y)
+    #             if head_y == body_y:
+    #                 if head_x < body_x:
+    #                     dist[1] = min(dist[1], body_x - head_x)
+    #                 elif head_x > body_x:
+    #                     dist[2] = min(dist[2], head_x - body_x)
 
-            elif self.dirny == -1:  # Up
-                if head_x == body_x:
-                    if head_y > body_y > head_y - defaultDist:
-                        dist[0] = min(dist[0], head_y - body_y)
-                if head_y == body_y:
-                    if head_x > body_x:
-                        dist[1] = min(dist[1], head_x - body_x)
-                    elif head_x < body_x:
-                        dist[2] = min(dist[2], body_x - head_x)
+    #         elif self.dirny == -1:  # Up
+    #             if head_x == body_x:
+    #                 if head_y > body_y > head_y - defaultDist:
+    #                     dist[0] = min(dist[0], head_y - body_y)
+    #             if head_y == body_y:
+    #                 if head_x > body_x:
+    #                     dist[1] = min(dist[1], head_x - body_x)
+    #                 elif head_x < body_x:
+    #                     dist[2] = min(dist[2], body_x - head_x)
 
-        wallDist = self.distWall()
-        dist = [min(dist[i], wallDist[i]) for i in range(3)]
+    #     wallDist = self.distWall()
+    #     dist = [min(dist[i], wallDist[i]) for i in range(3)]
 
-        if self.dirnx == 1:
-            if head_x < snack_x:
-                dirSnack[0] = 1
-            elif head_x > snack_x:
-                dirSnack[random.choice([1, 2])] = 1
-            if head_y > snack_y:
+    #     if self.dirnx == 1:
+    #         if head_x < snack_x:
+    #             dirSnack[0] = 1
+    #         elif head_x > snack_x:
+    #             dirSnack[random.choice([1, 2])] = 1
+    #         if head_y > snack_y:
+    #             dirSnack[1] = 1
+    #         if head_y < snack_y:
+    #             dirSnack[2] = 1
+
+    #     elif self.dirnx == -1:
+    #         if head_x > snack_x:
+    #             dirSnack[0] = 1
+    #         elif head_x < snack_x:
+    #             dirSnack[random.choice([1, 2])] = 1
+    #         if head_y < snack_y:
+    #             dirSnack[1] = 1
+    #         if head_y > snack_y:
+    #             dirSnack[2] = 1
+
+    #     elif self.dirny == 1:
+    #         if head_y < snack_y:
+    #             dirSnack[0] = 1
+    #         elif head_y > snack_y:
+    #             dirSnack[random.choice([1, 2])] = 1
+    #         if head_x < snack_x:
+    #             dirSnack[1] = 1
+    #         if head_x > snack_x:
+    #             dirSnack[2] = 1
+
+    #     elif self.dirny == -1:
+    #         if head_y > snack_y:
+    #             dirSnack[0] = 1
+    #         elif head_y < snack_y:
+    #             dirSnack[random.choice([1, 2])] = 1
+    #         if head_x > snack_x:
+    #             dirSnack[1] = 1
+    #         if head_x < snack_x:
+    #             dirSnack[2] = 1
+    #     print(f"vision: {dirSnack+dist}   head:{self.body[0].pos}")
+    #     return dirSnack + dist
+
+
+def vision(snake, snack):
+    global num_rows
+    dist = [-1,-1,-1] #AHEAD,LEFT,RIGHT
+    distBody = [-1,-1,-1] #If body if 1 away AHEAD, LEFT, RIGHT
+    defaultDist = num_rows/2
+
+    head_x, head_y = snake.head.pos
+    for i, body in enumerate(snake.body[1:]):
+ 
+        #GOING RIGHT
+        if snake.dirnx == 1:
+            if (head_x + defaultDist) >= body.pos[0] and head_y == body.pos[1] and head_x < body.pos[0]: #BODY FORWARD
+                if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
+                    dist[0] = abs(head_x - body.pos[0])
+                    if dist[0] == 1:
+                        distBody[0] = 1
+            if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #LEFT
+                if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
+                    dist[1] = abs(head_y - body.pos[1])
+                    if dist[1] == 1:
+                        distBody[1] = 1
+            if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #RIGHT
+                if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
+                    dist[2] = abs(head_y - body.pos[1])
+                    if dist[2] == 1:
+                        distBody[2] = 1
+        #GOING LEFT
+        elif snake.dirnx == -1:
+            if (head_x - defaultDist) <= body.pos[0] and head_y == body.pos[1] and head_x > body.pos[0]: #BODY FORWARD
+                if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
+                    dist[0] = abs(head_x - body.pos[0])
+                    if dist[0] == 1:
+                        distBody[0] = 1
+            if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #LEFT
+                if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
+                    dist[1] = abs(head_y - body.pos[1])
+                    if dist[1] == 1:
+                        distBody[1] = 1
+            if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #RIGHT
+                if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
+                    dist[2] = abs(head_y - body.pos[1])
+                    if dist[2] == 1:
+                        distBody[2] = 1
+        #GOING UP
+        elif snake.dirny == -1:
+            if (head_y - defaultDist) <= body.pos[1] and head_x == body.pos[0] and head_y > body.pos[1]: #BODY FORWARD
+                if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):
+                    dist[0] = abs(head_y - body.pos[1])
+                    if dist[0] == 1:
+                        distBody[0] = 1
+            if head_y == body.pos[1] and (head_y - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #LEFT
+                if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
+                    dist[1] = abs(head_x - body.pos[0])
+                    if dist[1] == 1:
+                        distBody[1] = 1
+            if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #RIGHT
+                if dist[2] == -1 or dist[2] > abs(head_x-body.pos[0]):
+                    dist[2] = abs(head_x - body.pos[0])
+                    if dist[2] == 1:
+                        distBody[2] = 1                    
+
+        #GOING DOWN 
+        elif snake.dirny == 1:
+            if (head_y + defaultDist) >= body.pos[1] and head_x == body.pos[0] and head_y < body.pos[1]: #BODY FORWARD
+                if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):    
+                    dist[0] = abs(head_y - body.pos[1])
+                    if dist[0] == 1:
+                        distBody[0] = 1
+            if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #LEFT
+                if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
+                    dist[1] = abs(head_x - body.pos[0])
+                    if dist[1] == 1:
+                        distBody[1] = 1
+            if head_y == body.pos[1] and (head_x - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #RIGHT
+                if dist[2] == -1 or dist[2] > abs(head_x - body.pos[0]):
+                    dist[2] = abs(head_x - body.pos[0])
+                    if dist[2] == 1:
+                        distBody[2] = 1
+
+    #Adds vision of walls
+    wallDist = distWall(snake)
+    for i, wall in enumerate(wallDist):
+        if wall != -1 and dist[i] == -1:
+            dist[i] = wall
+
+
+    #Getting for the direction of the snack
+    dirSnack = [-1,-1,-1] #AHEAD, LEFT, RIGHT
+    xDist = abs(head_x - snack.pos[0])
+    yDist = abs(head_y - snack.pos[1])
+    block = [-1,-1,-1] #BLOCKED BY BODY AHEAD, LEFT, RIGHT
+
+    if snake.dirnx == 1:
+        if head_x < snack.pos[0]:
+            if dist[0] < xDist and dist[0] != -1:
+                block[0] = 1
+            else:
+                dirSnack[0] = 1#abs(snake.head.pos[0]-snack.pos[0])
+        elif head_x > snack.pos[0] and head_y == snack.pos[1]:
+            if(random.randint(0,1)):
                 dirSnack[1] = 1
-            if head_y < snack_y:
+            else:
                 dirSnack[2] = 1
+        if head_y > snack.pos[1]:
+            if dist[1] < yDist and dist[1] != -1:
+                block[1] = 1
+            else:
+                dirSnack[1] = 1#abs(snake.head.pos[1]-snack.pos[1])
+        if head_y < snack.pos[1]:
+            if dist[2] < yDist and dist[2] != -1:
+                block[2] = 1
+            else:
+                dirSnack[2] = 1#abs(snake.head.pos[1]-snack.pos[1])
 
-        elif self.dirnx == -1:
-            if head_x > snack_x:
-                dirSnack[0] = 1
-            elif head_x < snack_x:
-                dirSnack[random.choice([1, 2])] = 1
-            if head_y < snack_y:
+        
+    elif snake.dirnx == -1:
+        if head_x > snack.pos[0]:
+            if dist[0] < xDist and dist[0] != -1:
+                block[0] = 1
+            else:
+                dirSnack[0] = 1#abs(snake.head.pos[0]-snack.pos[0])
+        elif head_x < snack.pos[0] and head_y == snack.pos[1]:
+            if(random.randint(0,1)):
                 dirSnack[1] = 1
-            if head_y > snack_y:
+            else:
                 dirSnack[2] = 1
+        if head_y < snack.pos[1]:
+            if dist[1] < yDist and dist[1] != -1:
+                block[1] = 1
+            else:
+                dirSnack[1] = 1#abs(snake.head.pos[1]-snack.pos[1])
+        if head_y > snack.pos[1]:
+            if dist[2] < yDist and dist[2] != -1:
+                block[2] = 1
+            else:
+                dirSnack[2] = 1#abs(snake.head.pos[1]-snack.pos[1])
 
-        elif self.dirny == 1:
-            if head_y < snack_y:
-                dirSnack[0] = 1
-            elif head_y > snack_y:
-                dirSnack[random.choice([1, 2])] = 1
-            if head_x < snack_x:
+       
+    elif snake.dirny == -1: 
+        if head_y > snack.pos[1]:
+            if dist[0] < yDist and dist[0] != -1:
+                block[0] = 1
+            else:
+                dirSnack[0] = 1#abs(snake.head.pos[1]-snack.pos[1])
+        elif head_y < snack.pos[1] and head_x == snack.pos[0]:
+            if(random.randint(0,1)):
                 dirSnack[1] = 1
-            if head_x > snack_x:
+            else:
                 dirSnack[2] = 1
+        if head_x > snack.pos[0]:
+            if dist[1] < xDist and dist[1] != -1:
+                block[1] = 1
+            else:
+                dirSnack[1] = 1#abs(snake.head.pos[0]-snack.pos[0])
+        if head_x < snack.pos[0]:
+            if dist[2] < xDist and dist[2] != -1:
+                block[2] = 1
+            else:
+                dirSnack[2] = 1#abs(snake.head.pos[0]-snack.pos[0])
 
-        elif self.dirny == -1:
-            if head_y > snack_y:
-                dirSnack[0] = 1
-            elif head_y < snack_y:
-                dirSnack[random.choice([1, 2])] = 1
-            if head_x > snack_x:
+
+    elif snake.dirny == 1: 
+        if head_y < snack.pos[1]:
+            if dist[0] < yDist and dist[0] != -1:
+                block[0] = 1
+            else:
+                dirSnack[0] = 1#abs(snake.head.pos[1]-snack.pos[1])
+        elif head_y > snack.pos[1] and head_x == snack.pos[0]:
+            if(random.randint(0,1)):
                 dirSnack[1] = 1
-            if head_x < snack_x:
+            else:
                 dirSnack[2] = 1
-        print(f"vision: {dirSnack+dist}   head:{self.body[0].pos}")
-        return dirSnack + dist
+        if head_x < snack.pos[0]:
+            if dist[1] < xDist and dist[1] != -1:
+                block[1] = 1
+            else:
+                dirSnack[1] = 1#abs(snake.head.pos[0]-snack.pos[0])
+        if head_x > snack.pos[0]:
+            if dist[2] < xDist and dist[2] != -1:
+                block[2] = 1
+            else:
+                dirSnack[2] = 1#abs(snake.head.pos[0]-snack.pos[0])
+    
+    if -1 not in dist:
+        dirSnack = [-1,-1,-1]
+        for i in range(len(dist)): 
+            dirSnack[dist.index(max(dist))] = 1
 
+    elif sum(block) > -2 or (1 in block and 1 in wallDist):
+        dirSnack = [-1,-1,-1]
+        dirSnack[dist.index(-1)] = 1             
+
+    #print("V:"+str(dirSnack+dist))
+    return dirSnack+dist
+
+
+def distWall(snake):
+    global num_rows
+    defaultDist = 5
+    dist = [-1,-1,-1] #AHEAD, LEFT, RIGHT
+    
+    head_x, head_y = snake.head.pos
+    if snake.dirnx == 1:
+        if (head_x + defaultDist) >= (num_rows-1):
+            dist[0] = abs(head_x - (num_rows-1))
+        if (head_y - defaultDist) <= 0:
+            dist[1] = abs(snake.head.pos[1] - 0)
+        if (head_y+defaultDist) >= (num_rows-1):
+            dist[2] = abs(head_y - (num_rows-1))
+    elif snake.dirnx == -1:  
+        if (head_x - defaultDist) <= 0:
+            dist[0] = abs(head_x)
+        if (head_y - defaultDist) <= 0:
+            dist[2] = abs(snake.head.pos[1] - 0)
+        if (head_y + defaultDist) >= (num_rows-1):
+            dist[1] = abs(head_y - (num_rows-1))
+    elif snake.dirny == -1: 
+        if (head_y - defaultDist) <= 0:
+            dist[0] = abs(head_y - 0)
+        if  (head_x + defaultDist) >= (num_rows - 1):
+            dist[2] = abs(head_x - (num_rows - 1))
+        if (head_x - defaultDist) <= 0:
+            dist[1] = abs(head_x)
+    elif snake.dirny == 1: 
+        if (head_y + defaultDist) >= (num_rows - 1):
+            dist[0] = abs(head_y - (num_rows-1))
+        if (head_x + defaultDist) >= (num_rows-1):
+            dist[1] = abs(head_x - (num_rows-1))
+        if  (head_x - defaultDist) <= 0:
+            dist[2] = abs(head_x)
+
+    return dist
+
+def getDirAction(snake, output):
+    action = vec(0,0)
+    #Calculating which direction is which depending on the current state
+    if max(output) == output[0]: #LEFT
+        if snake.dirnx == 1:
+            action.x = 0
+            action.y = -1
+        elif snake.dirnx == -1:
+            action.x = 0
+            action.y = 1
+        elif snake.dirny == -1:
+            action.x = -1
+            action.y = 0
+        elif snake.dirny == 1:
+            action.x = 1
+            action.y = 0
+    elif max(output) == output[1]: #RIGHT
+        if snake.dirnx == 1:
+            action.x = 0
+            action.y = 1
+        elif snake.dirnx == -1:
+            action.x = 0
+            action.y = -1
+        elif snake.dirny == -1:
+            action.x = 1
+            action.y = 0
+        elif snake.dirny == 1:
+            action.x = -1
+            action.y = 0
+    elif max(output) == output[2]: #FORWARD:
+        action.x = snake.dirnx
+        action.y = snake.dirny
+
+    return action
 
 
 def drawGrid(w, rows, surface):
@@ -350,17 +622,6 @@ def message_box(subject, content):
     except:
         pass
 
-def distance(x1,x2,y1,y2):
-    return int(((x1-x2)**2+(y1-y2)**2)**(0.5))-1
-# def get_inputs(snake, food):
-#     return [(snake.body[0]).pos[0],(snake.body[0]).pos[1],food.pos[0],food.pos[1]]
-
-def num_snakesAlive(snakes):
-    count = 0
-    for snake in snakes:
-        if snake.alive == True:
-            count+=1
-    return count
 
 def main_loop(genomes, config):
     # global width, rows, s, snack
@@ -372,6 +633,7 @@ def main_loop(genomes, config):
     foods = []
     scores = []
     frames = []
+    max_frames = int(rows*rows/2)
 
     for genome_id,genome in genomes:
         genome.fitness = 0
@@ -384,16 +646,15 @@ def main_loop(genomes, config):
         frames.append(0)
 
         #print(f"going to while {len(snakes)}")
-        while num_snakesAlive(snakes)>0 :
+        while len(snakes)>0 :
             #print(f"in while {len(snakes)}")
             for index,snake in enumerate(snakes):
-                if snake.alive == True:
-                    out_put = nets[index].activate(snake.vision(foods[index]))
-                    print(f"Output : {out_put}")
-                    snake.move(out_put)
+                    out_put = nets[index].activate(vision(snake,foods[index]))
+                    # print(f"Output : {out_put}")
+                    snake.move(getDirAction(snake,out_put))
 
                     if snake.body[0].pos == foods[index].pos:
-                        print("YUM")
+                        # print("YUM")
                         frames[index] = 0
                         ge_list[index].fitness += 1
                         snake.addCube()
@@ -401,20 +662,27 @@ def main_loop(genomes, config):
                         scores[index] = ge_list[index].fitness
 
                     frames[index] +=1 
+                    if frames[index] >= 100 and len(snake.body) <= 5:
+                        frames[index] = max_frames
+                        ge_list[index].fitness -= 10
 
-                    if snake.check_collision() or frames[index]>=100:
-                        #print(f"{index} is DEAD length:{len(snake.body)}, collide?{snake.check_collision()}   frame?{frames[index]}")
-                        ge_list[index].fitness -= 2
-                        snake.alive = False
-                        # snakes.pop(index)
-                        # foods.pop(index)
-                        # nets.pop(index)
-                        # scores.pop(index)
-                        # ge_list.pop(index)
-                        # frames.pop(index)
-                        # snakes.remove(snake)
-                        # break
-                    
+                    for x in range(len(snake.body)):
+                        if snake.body[x].pos in list(map(lambda z:z.pos,snake.body[x+1:])) or frames[index] >= max_frames:
+                            frames.pop(index)
+                            foods.pop(index)
+                            nets.pop(index)
+                            ge_list.pop(index)
+                            scores.pop(index)
+                            snakes.remove(snake)
+                            break
+                        elif snake.body[0].pos[0] < 0 or snake.body[0].pos[0] > (num_rows-1) or snake.body[0].pos[1] > num_rows-1 or snake.body[0].pos[1] < 0:
+                            frames.pop(index)
+                            foods.pop(index)
+                            nets.pop(index)
+                            ge_list.pop(index)
+                            scores.pop(index)
+                            snakes.remove(snake)
+                            break        
                     
 
 
@@ -476,6 +744,10 @@ def run(config_path):
     #Run for 50 generations
     winner = p.run(main_loop,100)
 
+    #Save the winner.
+    with open('winner_snake_mir1','wb') as f:
+        pickle.dump(winner,f)
+
     #Show final stats
     print('\nBest genome:\n{!s}'.format(winner))
 
@@ -484,5 +756,6 @@ if __name__ == "__main__":
     # here so that the script will run successfully regardless of the
     # current working directory.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir,"config_feedforward.txt")
+    config_path = os.path.join(local_dir,"config-feedforward.txt")
     run(config_path)
+
