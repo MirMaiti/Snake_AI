@@ -10,7 +10,7 @@ num_rows    = 20
 num_columns = 20
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.005
+LR = 0.001
 
 class Agent:
     def __init__(self):
@@ -66,12 +66,13 @@ class Agent:
 
     def get_action(self, state):
         # self.epsilon = max(self.epsilon_min,self.epsilon*self.epsilon_decay)
-        self.epsilon = 1000-self.n_games
+        self.epsilon = 80-self.n_games
         final_move = [0,0,0]
 
         # if random.uniform(0,1) < self.epsilon:
         if random.randint(0,200) < self.epsilon:
-            final_move[random.randint(0,2)] = 1
+            move = random.randint(0, 2)
+            final_move[move] = 1
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             prediction = self.model(state0)

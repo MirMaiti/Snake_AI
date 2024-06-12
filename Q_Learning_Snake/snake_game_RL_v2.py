@@ -42,49 +42,52 @@ class cube(object):
 class Snake(object):
     
     def __init__(self, color, pos):
-        self.reward = 0
         self.win = pygame.display.set_mode((500, 500))
         self.body = []
         self.turns = {}
         self.color = color
-        self.head = cube(pos)
-        self.body.append(self.head)
         self.dirnx = 0
         self.dirny = 1
-        self.frame = 0
-        self.snack = cube(self.randomSnack(num_rows, self))
+        self.head = cube(pos,self.dirnx,self.dirny)
+        self.reset((10,10))
+        self.body.append(self.head)
+        
+        # self.snack = cube(self.randomSnack(num_rows, self),dirnx=1,dirny=0,color=(0,255,0))
         self.clock = pygame.time.Clock()
 
 
     def move(self,action):
+        reward = 0
+        self.frame+=1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
-                
+
         if action == [1, 0, 0]:  # Move forward
-            action[0] = self.dirnx
-            action[1] = self.dirny
+            pass
+            # action[0] = self.dirnx
+            # action[1] = self.dirny
         elif action == [0, 1, 0]:  # Turn right
-            if self.dirnx == 0:
-                self.dirnx = self.dirny
-                self.dirny = 0
-            else:
-                self.dirny = -self.dirnx
-                self.dirnx = 0
-            action[0] = self.dirnx
-            action[1] = self.dirny
-        elif action == [0, 0, 1]:  # Turn left
             if self.dirnx == 0:
                 self.dirnx = -self.dirny
                 self.dirny = 0
             else:
                 self.dirny = self.dirnx
                 self.dirnx = 0
-            action[0] = self.dirnx
-            action[1] = self.dirny
-        else:
-            raise ValueError("Invalid action provided")
+            # action[0] = self.dirnx
+            # action[1] = self.dirny
+        elif action == [0, 0, 1]:  # Turn left
+            if self.dirnx == 0:
+                self.dirnx = self.dirny
+                self.dirny = 0
+            else:
+                self.dirny = -self.dirnx
+                self.dirnx = 0
+        #     action[0] = self.dirnx
+        #     action[1] = self.dirny
+        # else:
+        #     raise ValueError("Invalid action provided")
 
 
         self.turns[self.head.pos[:]] = [self.dirnx,self.dirny]
@@ -99,27 +102,23 @@ class Snake(object):
             else:
                 c.move(c.dirnx,c.dirny)
         
-        self.reward =0* -(abs(self.head.pos[0]-self.snack.pos[0])+abs(self.head.pos[1]-self.snack.pos[1]))
-        
-        self.frame+=1
-        # self.reward -= 0.05
         #Display the game:
         
         self.redrawWindow(self.win)
 
         #Adjusting Reward
+        if self.check_collision() or (self.frame>100*len(self.body)):
+            reward = -10
+            return (reward,True,len(self.body))
+        
         if self.body[0].pos == self.snack.pos:
-            self.reward = 10
-            self.frame = 0
+            reward = 10
             self.addCube()
             self.snack = cube(self.randomSnack(num_rows, self), color=(0,255,0))
 
-        if self.check_collision() or (self.frame>100*len(self.body)):
-            self.reward = -10
-            return (self.reward,True,len(self.body))
         
 
-        return (self.reward,self.check_collision(),len(self.body))
+        return (reward,self.check_collision(),len(self.body))
     
     def danger(self):
         point_l = (self.head.pos[0] - 1, self.head.pos[1])
@@ -161,11 +160,10 @@ class Snake(object):
             if (point_r in self.body) or (point_r[0] < 0 or point_r[0] >= num_rows or point_r[1] < 0 or point_r[1] >= num_columns):
                 danger_right = True       
         
-        return (danger_forward,danger_right,danger_left)
+        return [danger_forward,danger_right,danger_left]
 
 
     def check_collision(self):
-        self.frame = 0
         head_pos = self.body[0].pos
         print(str(head_pos[0]),",", str(head_pos[1]),"\n")
         # Check collision with walls
@@ -180,12 +178,14 @@ class Snake(object):
         return False  # No collision   
 
     def reset(self, pos):
+        self.frame = 0
         self.head = cube(pos)
         self.body = []
         self.body.append(self.head)
         self.turns = {}
         self.dirnx = 0
         self.dirny = 1
+        self.snack = cube(self.randomSnack(num_rows, self),dirnx=1,dirny=0,color=(0,255,0))
 
 
     def addCube(self):
@@ -213,272 +213,272 @@ class Snake(object):
                 c.draw(surface)
 
 
-    def getDirAction(self, output):
-        action = vec(0,0)
-        #Calculating which direction is which depending on the current state
-        if output[0] == 1: #LEFT
-            if self.dirnx == 1:
-                action.x = 0
-                action.y = -1
-            elif self.dirnx == -1:
-                action.x = 0
-                action.y = 1
-            elif self.dirny == -1:
-                action.x = -1
-                action.y = 0
-            elif self.dirny == 1:
-                action.x = 1
-                action.y = 0
-        elif output[1] == 1: #RIGHT
-            if self.dirnx == 1:
-                action.x = 0
-                action.y = 1
-            elif self.dirnx == -1:
-                action.x = 0
-                action.y = -1
-            elif self.dirny == -1:
-                action.x = 1
-                action.y = 0
-            elif self.dirny == 1:
-                action.x = -1
-                action.y = 0
-        elif output[2] == 1: #FORWARD:
-            action.x = self.dirnx
-            action.y = self.dirny
+    # def getDirAction(self, output):
+    #     action = vec(0,0)
+    #     #Calculating which direction is which depending on the current state
+    #     if output[0] == 1: #LEFT
+    #         if self.dirnx == 1:
+    #             action.x = 0
+    #             action.y = -1
+    #         elif self.dirnx == -1:
+    #             action.x = 0
+    #             action.y = 1
+    #         elif self.dirny == -1:
+    #             action.x = -1
+    #             action.y = 0
+    #         elif self.dirny == 1:
+    #             action.x = 1
+    #             action.y = 0
+    #     elif output[1] == 1: #RIGHT
+    #         if self.dirnx == 1:
+    #             action.x = 0
+    #             action.y = 1
+    #         elif self.dirnx == -1:
+    #             action.x = 0
+    #             action.y = -1
+    #         elif self.dirny == -1:
+    #             action.x = 1
+    #             action.y = 0
+    #         elif self.dirny == 1:
+    #             action.x = -1
+    #             action.y = 0
+    #     elif output[2] == 1: #FORWARD:
+    #         action.x = self.dirnx
+    #         action.y = self.dirny
 
-        return action
+    #     return action
 
-    def vision(self, snack):
-        global num_rows
-        dist = [-1,-1,-1] #AHEAD,LEFT,RIGHT
-        distBody = [-1,-1,-1] #If body if 1 away AHEAD, LEFT, RIGHT
-        defaultDist = num_rows/2
+    # def vision(self, snack):
+    #     global num_rows
+    #     dist = [-1,-1,-1] #AHEAD,LEFT,RIGHT
+    #     distBody = [-1,-1,-1] #If body if 1 away AHEAD, LEFT, RIGHT
+    #     defaultDist = num_rows/2
 
-        head_x, head_y = self.head.pos
-        for i, body in enumerate(self.body[1:]):
+    #     head_x, head_y = self.head.pos
+    #     for i, body in enumerate(self.body[1:]):
     
-            #GOING RIGHT
-            if self.dirnx == 1:
-                if (head_x + defaultDist) >= body.pos[0] and head_y == body.pos[1] and head_x < body.pos[0]: #BODY FORWARD
-                    if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
-                        dist[0] = abs(head_x - body.pos[0])
-                        if dist[0] == 1:
-                            distBody[0] = 1
-                if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #LEFT
-                    if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
-                        dist[1] = abs(head_y - body.pos[1])
-                        if dist[1] == 1:
-                            distBody[1] = 1
-                if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #RIGHT
-                    if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
-                        dist[2] = abs(head_y - body.pos[1])
-                        if dist[2] == 1:
-                            distBody[2] = 1
-            #GOING LEFT
-            elif self.dirnx == -1:
-                if (head_x - defaultDist) <= body.pos[0] and head_y == body.pos[1] and head_x > body.pos[0]: #BODY FORWARD
-                    if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
-                        dist[0] = abs(head_x - body.pos[0])
-                        if dist[0] == 1:
-                            distBody[0] = 1
-                if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #LEFT
-                    if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
-                        dist[1] = abs(head_y - body.pos[1])
-                        if dist[1] == 1:
-                            distBody[1] = 1
-                if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #RIGHT
-                    if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
-                        dist[2] = abs(head_y - body.pos[1])
-                        if dist[2] == 1:
-                            distBody[2] = 1
-            #GOING UP
-            elif self.dirny == -1:
-                if (head_y - defaultDist) <= body.pos[1] and head_x == body.pos[0] and head_y > body.pos[1]: #BODY FORWARD
-                    if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):
-                        dist[0] = abs(head_y - body.pos[1])
-                        if dist[0] == 1:
-                            distBody[0] = 1
-                if head_y == body.pos[1] and (head_y - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #LEFT
-                    if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
-                        dist[1] = abs(head_x - body.pos[0])
-                        if dist[1] == 1:
-                            distBody[1] = 1
-                if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #RIGHT
-                    if dist[2] == -1 or dist[2] > abs(head_x-body.pos[0]):
-                        dist[2] = abs(head_x - body.pos[0])
-                        if dist[2] == 1:
-                            distBody[2] = 1                    
+    #         #GOING RIGHT
+    #         if self.dirnx == 1:
+    #             if (head_x + defaultDist) >= body.pos[0] and head_y == body.pos[1] and head_x < body.pos[0]: #BODY FORWARD
+    #                 if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
+    #                     dist[0] = abs(head_x - body.pos[0])
+    #                     if dist[0] == 1:
+    #                         distBody[0] = 1
+    #             if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #LEFT
+    #                 if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
+    #                     dist[1] = abs(head_y - body.pos[1])
+    #                     if dist[1] == 1:
+    #                         distBody[1] = 1
+    #             if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #RIGHT
+    #                 if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
+    #                     dist[2] = abs(head_y - body.pos[1])
+    #                     if dist[2] == 1:
+    #                         distBody[2] = 1
+    #         #GOING LEFT
+    #         elif self.dirnx == -1:
+    #             if (head_x - defaultDist) <= body.pos[0] and head_y == body.pos[1] and head_x > body.pos[0]: #BODY FORWARD
+    #                 if dist[0] == -1 or dist[0] > abs(head_x - body.pos[0]):
+    #                     dist[0] = abs(head_x - body.pos[0])
+    #                     if dist[0] == 1:
+    #                         distBody[0] = 1
+    #             if head_x == body.pos[0] and (head_y + defaultDist) >= body.pos[1] and head_y < body.pos[1]: #LEFT
+    #                 if dist[1] == -1 or dist[1] > abs(head_y - body.pos[1]):
+    #                     dist[1] = abs(head_y - body.pos[1])
+    #                     if dist[1] == 1:
+    #                         distBody[1] = 1
+    #             if head_x == body.pos[0] and (head_y - defaultDist) <= body.pos[1] and head_y > body.pos[1]: #RIGHT
+    #                 if dist[2] == -1 or dist[2] > abs(head_y - body.pos[1]):
+    #                     dist[2] = abs(head_y - body.pos[1])
+    #                     if dist[2] == 1:
+    #                         distBody[2] = 1
+    #         #GOING UP
+    #         elif self.dirny == -1:
+    #             if (head_y - defaultDist) <= body.pos[1] and head_x == body.pos[0] and head_y > body.pos[1]: #BODY FORWARD
+    #                 if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):
+    #                     dist[0] = abs(head_y - body.pos[1])
+    #                     if dist[0] == 1:
+    #                         distBody[0] = 1
+    #             if head_y == body.pos[1] and (head_y - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #LEFT
+    #                 if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
+    #                     dist[1] = abs(head_x - body.pos[0])
+    #                     if dist[1] == 1:
+    #                         distBody[1] = 1
+    #             if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #RIGHT
+    #                 if dist[2] == -1 or dist[2] > abs(head_x-body.pos[0]):
+    #                     dist[2] = abs(head_x - body.pos[0])
+    #                     if dist[2] == 1:
+    #                         distBody[2] = 1                    
 
-            #GOING DOWN 
-            elif self.dirny == 1:
-                if (head_y + defaultDist) >= body.pos[1] and head_x == body.pos[0] and head_y < body.pos[1]: #BODY FORWARD
-                    if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):    
-                        dist[0] = abs(head_y - body.pos[1])
-                        if dist[0] == 1:
-                            distBody[0] = 1
-                if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #LEFT
-                    if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
-                        dist[1] = abs(head_x - body.pos[0])
-                        if dist[1] == 1:
-                            distBody[1] = 1
-                if head_y == body.pos[1] and (head_x - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #RIGHT
-                    if dist[2] == -1 or dist[2] > abs(head_x - body.pos[0]):
-                        dist[2] = abs(head_x - body.pos[0])
-                        if dist[2] == 1:
-                            distBody[2] = 1
+    #         #GOING DOWN 
+    #         elif self.dirny == 1:
+    #             if (head_y + defaultDist) >= body.pos[1] and head_x == body.pos[0] and head_y < body.pos[1]: #BODY FORWARD
+    #                 if dist[0] == -1 or dist[0] > abs(head_y - body.pos[1]):    
+    #                     dist[0] = abs(head_y - body.pos[1])
+    #                     if dist[0] == 1:
+    #                         distBody[0] = 1
+    #             if head_y == body.pos[1] and (head_x + defaultDist) >= body.pos[0] and head_x < body.pos[0]: #LEFT
+    #                 if dist[1] == -1 or dist[1] > abs(head_x - body.pos[0]):
+    #                     dist[1] = abs(head_x - body.pos[0])
+    #                     if dist[1] == 1:
+    #                         distBody[1] = 1
+    #             if head_y == body.pos[1] and (head_x - defaultDist) <= body.pos[0] and head_x > body.pos[0]: #RIGHT
+    #                 if dist[2] == -1 or dist[2] > abs(head_x - body.pos[0]):
+    #                     dist[2] = abs(head_x - body.pos[0])
+    #                     if dist[2] == 1:
+    #                         distBody[2] = 1
 
-        #Adds vision of walls
-        wallDist = self.distWall(self)
-        for i, wall in enumerate(wallDist):
-            if wall != -1 and dist[i] == -1:
-                dist[i] = wall
+    #     #Adds vision of walls
+    #     wallDist = self.distWall(self)
+    #     for i, wall in enumerate(wallDist):
+    #         if wall != -1 and dist[i] == -1:
+    #             dist[i] = wall
 
 
-        #Getting for the direction of the snack
-        dirSnack = [-1,-1,-1] #AHEAD, LEFT, RIGHT
-        xDist = abs(head_x - snack.pos[0])
-        yDist = abs(head_y - snack.pos[1])
-        block = [-1,-1,-1] #BLOCKED BY BODY AHEAD, LEFT, RIGHT
+    #     #Getting for the direction of the snack
+    #     dirSnack = [-1,-1,-1] #AHEAD, LEFT, RIGHT
+    #     xDist = abs(head_x - snack.pos[0])
+    #     yDist = abs(head_y - snack.pos[1])
+    #     block = [-1,-1,-1] #BLOCKED BY BODY AHEAD, LEFT, RIGHT
 
-        if self.dirnx == 1:
-            if head_x < snack.pos[0]:
-                if dist[0] < xDist and dist[0] != -1:
-                    block[0] = 1
-                else:
-                    dirSnack[0] = 1#abs(self.head.pos[0]-snack.pos[0])
-            elif head_x > snack.pos[0] and head_y == snack.pos[1]:
-                if(random.randint(0,1)):
-                    dirSnack[1] = 1
-                else:
-                    dirSnack[2] = 1
-            if head_y > snack.pos[1]:
-                if dist[1] < yDist and dist[1] != -1:
-                    block[1] = 1
-                else:
-                    dirSnack[1] = 1#abs(self.head.pos[1]-snack.pos[1])
-            if head_y < snack.pos[1]:
-                if dist[2] < yDist and dist[2] != -1:
-                    block[2] = 1
-                else:
-                    dirSnack[2] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #     if self.dirnx == 1:
+    #         if head_x < snack.pos[0]:
+    #             if dist[0] < xDist and dist[0] != -1:
+    #                 block[0] = 1
+    #             else:
+    #                 dirSnack[0] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #         elif head_x > snack.pos[0] and head_y == snack.pos[1]:
+    #             if(random.randint(0,1)):
+    #                 dirSnack[1] = 1
+    #             else:
+    #                 dirSnack[2] = 1
+    #         if head_y > snack.pos[1]:
+    #             if dist[1] < yDist and dist[1] != -1:
+    #                 block[1] = 1
+    #             else:
+    #                 dirSnack[1] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #         if head_y < snack.pos[1]:
+    #             if dist[2] < yDist and dist[2] != -1:
+    #                 block[2] = 1
+    #             else:
+    #                 dirSnack[2] = 1#abs(self.head.pos[1]-snack.pos[1])
 
             
-        elif self.dirnx == -1:
-            if head_x > snack.pos[0]:
-                if dist[0] < xDist and dist[0] != -1:
-                    block[0] = 1
-                else:
-                    dirSnack[0] = 1#abs(self.head.pos[0]-snack.pos[0])
-            elif head_x < snack.pos[0] and head_y == snack.pos[1]:
-                if(random.randint(0,1)):
-                    dirSnack[1] = 1
-                else:
-                    dirSnack[2] = 1
-            if head_y < snack.pos[1]:
-                if dist[1] < yDist and dist[1] != -1:
-                    block[1] = 1
-                else:
-                    dirSnack[1] = 1#abs(self.head.pos[1]-snack.pos[1])
-            if head_y > snack.pos[1]:
-                if dist[2] < yDist and dist[2] != -1:
-                    block[2] = 1
-                else:
-                    dirSnack[2] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #     elif self.dirnx == -1:
+    #         if head_x > snack.pos[0]:
+    #             if dist[0] < xDist and dist[0] != -1:
+    #                 block[0] = 1
+    #             else:
+    #                 dirSnack[0] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #         elif head_x < snack.pos[0] and head_y == snack.pos[1]:
+    #             if(random.randint(0,1)):
+    #                 dirSnack[1] = 1
+    #             else:
+    #                 dirSnack[2] = 1
+    #         if head_y < snack.pos[1]:
+    #             if dist[1] < yDist and dist[1] != -1:
+    #                 block[1] = 1
+    #             else:
+    #                 dirSnack[1] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #         if head_y > snack.pos[1]:
+    #             if dist[2] < yDist and dist[2] != -1:
+    #                 block[2] = 1
+    #             else:
+    #                 dirSnack[2] = 1#abs(self.head.pos[1]-snack.pos[1])
 
         
-        elif self.dirny == -1: 
-            if head_y > snack.pos[1]:
-                if dist[0] < yDist and dist[0] != -1:
-                    block[0] = 1
-                else:
-                    dirSnack[0] = 1#abs(self.head.pos[1]-snack.pos[1])
-            elif head_y < snack.pos[1] and head_x == snack.pos[0]:
-                if(random.randint(0,1)):
-                    dirSnack[1] = 1
-                else:
-                    dirSnack[2] = 1
-            if head_x > snack.pos[0]:
-                if dist[1] < xDist and dist[1] != -1:
-                    block[1] = 1
-                else:
-                    dirSnack[1] = 1#abs(self.head.pos[0]-snack.pos[0])
-            if head_x < snack.pos[0]:
-                if dist[2] < xDist and dist[2] != -1:
-                    block[2] = 1
-                else:
-                    dirSnack[2] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #     elif self.dirny == -1: 
+    #         if head_y > snack.pos[1]:
+    #             if dist[0] < yDist and dist[0] != -1:
+    #                 block[0] = 1
+    #             else:
+    #                 dirSnack[0] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #         elif head_y < snack.pos[1] and head_x == snack.pos[0]:
+    #             if(random.randint(0,1)):
+    #                 dirSnack[1] = 1
+    #             else:
+    #                 dirSnack[2] = 1
+    #         if head_x > snack.pos[0]:
+    #             if dist[1] < xDist and dist[1] != -1:
+    #                 block[1] = 1
+    #             else:
+    #                 dirSnack[1] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #         if head_x < snack.pos[0]:
+    #             if dist[2] < xDist and dist[2] != -1:
+    #                 block[2] = 1
+    #             else:
+    #                 dirSnack[2] = 1#abs(self.head.pos[0]-snack.pos[0])
 
 
-        elif self.dirny == 1: 
-            if head_y < snack.pos[1]:
-                if dist[0] < yDist and dist[0] != -1:
-                    block[0] = 1
-                else:
-                    dirSnack[0] = 1#abs(self.head.pos[1]-snack.pos[1])
-            elif head_y > snack.pos[1] and head_x == snack.pos[0]:
-                if(random.randint(0,1)):
-                    dirSnack[1] = 1
-                else:
-                    dirSnack[2] = 1
-            if head_x < snack.pos[0]:
-                if dist[1] < xDist and dist[1] != -1:
-                    block[1] = 1
-                else:
-                    dirSnack[1] = 1#abs(self.head.pos[0]-snack.pos[0])
-            if head_x > snack.pos[0]:
-                if dist[2] < xDist and dist[2] != -1:
-                    block[2] = 1
-                else:
-                    dirSnack[2] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #     elif self.dirny == 1: 
+    #         if head_y < snack.pos[1]:
+    #             if dist[0] < yDist and dist[0] != -1:
+    #                 block[0] = 1
+    #             else:
+    #                 dirSnack[0] = 1#abs(self.head.pos[1]-snack.pos[1])
+    #         elif head_y > snack.pos[1] and head_x == snack.pos[0]:
+    #             if(random.randint(0,1)):
+    #                 dirSnack[1] = 1
+    #             else:
+    #                 dirSnack[2] = 1
+    #         if head_x < snack.pos[0]:
+    #             if dist[1] < xDist and dist[1] != -1:
+    #                 block[1] = 1
+    #             else:
+    #                 dirSnack[1] = 1#abs(self.head.pos[0]-snack.pos[0])
+    #         if head_x > snack.pos[0]:
+    #             if dist[2] < xDist and dist[2] != -1:
+    #                 block[2] = 1
+    #             else:
+    #                 dirSnack[2] = 1#abs(self.head.pos[0]-snack.pos[0])
         
-        if -1 not in dist:
-            dirSnack = [-1,-1,-1]
-            for i in range(len(dist)): 
-                dirSnack[dist.index(max(dist))] = 1
+    #     if -1 not in dist:
+    #         dirSnack = [-1,-1,-1]
+    #         for i in range(len(dist)): 
+    #             dirSnack[dist.index(max(dist))] = 1
 
-        elif sum(block) > -2 or (1 in block and 1 in wallDist):
-            dirSnack = [-1,-1,-1]
-            dirSnack[dist.index(-1)] = 1             
+    #     elif sum(block) > -2 or (1 in block and 1 in wallDist):
+    #         dirSnack = [-1,-1,-1]
+    #         dirSnack[dist.index(-1)] = 1             
 
-        #print("V:"+str(dirSnack+dist))
-        return dirSnack+dist
+    #     #print("V:"+str(dirSnack+dist))
+    #     return dirSnack+dist
 
-    def distWall(self):
-        global num_rows
-        defaultDist = 5
-        dist = [-1,-1,-1] #AHEAD, LEFT, RIGHT
+    # def distWall(self):
+    #     global num_rows
+    #     defaultDist = 5
+    #     dist = [-1,-1,-1] #AHEAD, LEFT, RIGHT
         
-        head_x, head_y = self.head.pos
-        if self.dirnx == 1:
-            if (head_x + defaultDist) >= (num_rows-1):
-                dist[0] = abs(head_x - (num_rows-1))
-            if (head_y - defaultDist) <= 0:
-                dist[1] = abs(self.head.pos[1] - 0)
-            if (head_y+defaultDist) >= (num_rows-1):
-                dist[2] = abs(head_y - (num_rows-1))
-        elif self.dirnx == -1:  
-            if (head_x - defaultDist) <= 0:
-                dist[0] = abs(head_x)
-            if (head_y - defaultDist) <= 0:
-                dist[2] = abs(self.head.pos[1] - 0)
-            if (head_y + defaultDist) >= (num_rows-1):
-                dist[1] = abs(head_y - (num_rows-1))
-        elif self.dirny == -1: 
-            if (head_y - defaultDist) <= 0:
-                dist[0] = abs(head_y - 0)
-            if  (head_x + defaultDist) >= (num_rows - 1):
-                dist[2] = abs(head_x - (num_rows - 1))
-            if (head_x - defaultDist) <= 0:
-                dist[1] = abs(head_x)
-        elif self.dirny == 1: 
-            if (head_y + defaultDist) >= (num_rows - 1):
-                dist[0] = abs(head_y - (num_rows-1))
-            if (head_x + defaultDist) >= (num_rows-1):
-                dist[1] = abs(head_x - (num_rows-1))
-            if  (head_x - defaultDist) <= 0:
-                dist[2] = abs(head_x)
+    #     head_x, head_y = self.head.pos
+    #     if self.dirnx == 1:
+    #         if (head_x + defaultDist) >= (num_rows-1):
+    #             dist[0] = abs(head_x - (num_rows-1))
+    #         if (head_y - defaultDist) <= 0:
+    #             dist[1] = abs(self.head.pos[1] - 0)
+    #         if (head_y+defaultDist) >= (num_rows-1):
+    #             dist[2] = abs(head_y - (num_rows-1))
+    #     elif self.dirnx == -1:  
+    #         if (head_x - defaultDist) <= 0:
+    #             dist[0] = abs(head_x)
+    #         if (head_y - defaultDist) <= 0:
+    #             dist[2] = abs(self.head.pos[1] - 0)
+    #         if (head_y + defaultDist) >= (num_rows-1):
+    #             dist[1] = abs(head_y - (num_rows-1))
+    #     elif self.dirny == -1: 
+    #         if (head_y - defaultDist) <= 0:
+    #             dist[0] = abs(head_y - 0)
+    #         if  (head_x + defaultDist) >= (num_rows - 1):
+    #             dist[2] = abs(head_x - (num_rows - 1))
+    #         if (head_x - defaultDist) <= 0:
+    #             dist[1] = abs(head_x)
+    #     elif self.dirny == 1: 
+    #         if (head_y + defaultDist) >= (num_rows - 1):
+    #             dist[0] = abs(head_y - (num_rows-1))
+    #         if (head_x + defaultDist) >= (num_rows-1):
+    #             dist[1] = abs(head_x - (num_rows-1))
+    #         if  (head_x - defaultDist) <= 0:
+    #             dist[2] = abs(head_x)
 
-        return dist
+    #     return dist
 
 
     def drawGrid(self,w, rows, surface):
